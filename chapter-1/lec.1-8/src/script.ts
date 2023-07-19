@@ -6,21 +6,31 @@ import {
 	Group,
 	Mesh,
 	MeshBasicMaterial,
-	OrthographicCamera,
+//	OrthographicCamera,
 	PerspectiveCamera,
 	Scene,
-	Vector3,
+//	Vector3,
 	WebGLRenderer
 } from "three";
+import {OrbitControls} from "three/addons/controls/OrbitControls.js";
 
 // Canvas
 const canvas = document.querySelector('canvas.webgl') as HTMLCanvasElement;
 
 // Sizes
-const sizes = {
-	width: 1200,
-	height: 800
+let sizes = {
+	width: 0,
+	height: 0
 };
+
+function updateSizes() {
+	sizes = {
+		width: window.innerWidth,
+		height: window.innerHeight
+	};
+}
+
+updateSizes();
 
 const aspectRatio = sizes.width / sizes.height;
 
@@ -30,28 +40,30 @@ const scene = new Scene();
 const group = new Group();
 scene.add(group);
 
-// const camera = new PerspectiveCamera(100, sizes.width / sizes.height, 0.1, 100);
-// camera.position.set(1, 1, 3)
+const camera = new PerspectiveCamera(100, aspectRatio, 0.1, 100);
+camera.position.set(1, 1, 3)
 
-const camera = new OrthographicCamera(-3 * aspectRatio, 3 * aspectRatio, 3, -3);
+//const camera = new OrthographicCamera(-3 * aspectRatio, 3 * aspectRatio, 3, -3);
 scene.add(camera);
 
 const axesHelper = new AxesHelper(3);
 scene.add(axesHelper)
 
-let cursorPosition = {
-	x: 0,
-	y: 0
-}
+// let cursorPosition = {
+// 	x: 0,
+// 	y: 0
+// }
+//
+// function updateCursorPosition(event: MouseEvent) {
+// 	cursorPosition = {
+// 		x: event.clientX / sizes.width,
+// 		y: event.clientY / sizes.height
+// 	}
+// }
 
-function updateCursorPosition(event: MouseEvent) {
-	cursorPosition = {
-		x: event.clientX / sizes.width,
-		y: event.clientY / sizes.height
-	}
-}
+//canvas.addEventListener('mousemove', updateCursorPosition);
 
-canvas.addEventListener('mousemove', updateCursorPosition);
+const orbitControls = new OrbitControls(camera, canvas)
 
 // Items for scene:
 const cubeGeometry = new BoxGeometry(1, 1, 1);
@@ -81,13 +93,17 @@ group.add(cube3);
 const renderer = new WebGLRenderer({
 	canvas
 });
-renderer.setSize(sizes.width, sizes.height);
-
-const clock = new Clock();
+function updateRendererSize() {
+	renderer.setSize(sizes.width, sizes.height);
+	renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+}
+updateRendererSize();
 
 gsap.to(group.position, { x: 2, y: 2, duration: 1, delay: 1});
 gsap.to(group.position, { x: -2, y: -2, duration: 1, delay: 2});
 gsap.to(group.position, { x: 0, y: 0, duration: 1, delay: 3});
+
+const clock = new Clock();
 
 function animate() {
 	cube1.rotation.set(cube1.rotation.x + 0.01, cube1.rotation.y + 0.01, 0)
@@ -97,9 +113,11 @@ function animate() {
 
 	cube3.scale.set(Math.sin(elapsedTime), Math.cos(elapsedTime), Math.sin(elapsedTime));
 
-	const {x, y } = cursorPosition;
-	camera.position.set(Math.sin(x * 2 * Math.PI) * 3, y * 5, Math.cos(x * 2 * Math.PI) * 3);
-	camera.lookAt(new Vector3());
+	// const {x, y} = cursorPosition;
+	// camera.position.set(Math.sin(x * 2 * Math.PI) * 3, y * 5, Math.cos(x * 2 * Math.PI) * 3);
+	// camera.lookAt(new Vector3());
+
+	orbitControls.update();
 
 	renderer.render(scene, camera);
 	requestAnimationFrame(animate);
@@ -107,3 +125,18 @@ function animate() {
 
 animate();
 
+window.addEventListener('resize', () => {
+	updateSizes();
+	camera.aspect = aspectRatio;
+	camera.updateProjectionMatrix();
+	updateRendererSize();
+});
+
+window.addEventListener('dblclick', () => {
+	const fullScreenElement = document.fullscreenElement;
+	if (!fullScreenElement) {
+		canvas.requestFullscreen();
+	} else {
+		document.exitFullscreen();
+	}
+});
